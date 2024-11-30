@@ -1,66 +1,90 @@
-require('dotenv').config();
 const nodemailer = require("nodemailer");
 
-console.log("SMTP_USERNAME:", process.env.SMTP_USERNAME);
-console.log("SMTP_PASSWORD:", process.env.SMTP_PASSWORD ? "Loaded" : "Missing");
-if (!process.env.SMTP_USERNAME || !process.env.SMTP_PASSWORD) {
-    throw new Error("SMTP credentials are missing. Check your .env file.");
-}
-
+// Function handler for Netlify Functions
 exports.handler = async (event) => {
-    if (event.httpMethod !== "POST") {
-        return {
-            statusCode: 405,
-            body: JSON.stringify({ error: "Method Not Allowed" }),
-        };
+  // Allow only POST requests
+  if (event.httpMethod !== "POST") {
+    return {
+      statusCode: 405,
+      body: JSON.stringify({ error: "Method Not Allowed" }),
+    };
+  }
+
+  try {
+    // Parse the incoming request body
+    const { name, email, message } = JSON.parse(event.body);
+
+    // Validate required fields
+    if (!name || !email || !message) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: "All fields (name, email, message) are required." }),
+      };
     }
 
-    try {
-        const { name, email, message } = JSON.parse(event.body);
-
-        if (!name || !email || !message) {
-            return {
-                statusCode: 400,
-                body: JSON.stringify({ error: "All fields are required." }),
-            };
-        }
-
-        if (!process.env.SMTP_USERNAME || !process.env.SMTP_PASSWORD) {
-            throw new Error("SMTP credentials are missing. Check your .env file.");
-        }
-
-        const transporter = nodemailer.createTransport({
-            service: "gmail",
-            host: "smtp.gmail.com",
-            port: 587,
-            secure: false,
-            auth: {
-                user: process.env.SMTP_USERNAME,
-                pass: process.env.SMTP_PASSWORD,
-            },
-        });
-
-        const mailOptions = {
-            from: `"${name}" <${email}>`,
-            to: process.env.SMTP_USERNAME,
-            subject: `Message from ${name}`,
-            text: `Name: ${name}\nEmail: ${email}\n\nMessage:\n${message}`,
-        };
-
-        await transporter.sendMail(mailOptions);
-
-        return {
-            statusCode: 200,
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ message: "Email sent successfully!" }),
-        };
-    } catch (error) {
-        console.error("Error sending email:", error.message);
-        return {
-            statusCode: 500,
-            body: JSON.stringify({ error: "Failed to send email. " + error.message }),
-        };
+    // Validate SMTP credentials
+    if (!process.env.SMTP_USERNAME || !process.env.SMTP_PASSWORD) {
+      throw new Error("SMTP credentials are missing. Check your Netlify environment variables.");
     }
+
+    // Configure the SMTP transport using nodemailer
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      host: "smtp.gmail.com",
+      port: 587,
+      secure: false, // Use TLS
+      auth: {
+        user: process.env.SMTP_USERNAME, // Gmail address
+        pass: process.env.SMTP_PASSWORD, // App password
+      },
+    });
+
+    // Email options
+    const mailOptions = {
+      from: `"${name}" <${email}>`, // Sender info
+      to: process.env.SMTP_USERNAME, // Receiver (your email)
+      subject: `New message from ${name}`, // Email subject
+      text: `Name: ${name}\nEmail: ${email}\n\nMessage:\n${message}`, // Email body
+    };
+
+    // Send the email
+    const info = await transporter.sendMail(mailOptions);
+
+    // Return success response
+    return {
+      statusCode: 200,
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ message: "Email sent successfully!", info }),
+    };
+  } catch (error) {
+    console.error("Error sending email:", error);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: "Failed to send email. " + error.message }),
+    };
+  }
 };
+const sendEmail = async (formData) => {
+    try {
+      const response = await fetch("/.netlify/functions/email", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+  
+      const result = await response.json();
+      if (response.ok) {
+        alert("Email sent successfully!");
+      } else {
+        alert("Error: " + result.error);
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      alert("Failed to send email. Please try again later.");
+    }
+  };
+  
