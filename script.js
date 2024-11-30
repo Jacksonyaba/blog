@@ -32,7 +32,7 @@ document.getElementById("contact-form").addEventListener("submit", async (event)
                 const response = await fetch("/.netlify/functions/email", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(data),
+                    body: JSON.stringify({ name, email, message }),
                 });
 
                 const result = await response.json();
@@ -54,3 +54,6 @@ document.getElementById("contact-form").addEventListener("submit", async (event)
         alert('Please fill out all fields.');
     }
 });
+
+
+
