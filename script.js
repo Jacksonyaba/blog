@@ -55,5 +55,43 @@ document.getElementById("contact-form").addEventListener("submit", async (event)
     }
 });
 
+const sendEmail = async (formData) => {
+    try {
+      const response = await fetch("/.netlify/functions/send-email", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+  
+      const result = await response.json();
+      if (response.ok) {
+        alert("Email sent successfully!");
+      } else {
+        alert("Error: " + result.error);
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      alert("Failed to send email. Please try again later.");
+    }
+  };
+  
+  // Example form submission handler
+  document.querySelector("#contactForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+  
+    const name = document.querySelector("#name").value;
+    const email = document.querySelector("#email").value;
+    const message = document.querySelector("#message").value;
+  
+    if (!name || !email || !message) {
+      alert("Please fill in all fields.");
+      return;
+    }
+  
+    await sendEmail({ name, email, message });
+  });
+  
 
 

@@ -1,6 +1,5 @@
 const nodemailer = require("nodemailer");
 
-// Function handler for Netlify Functions
 exports.handler = async (event) => {
   // Allow only POST requests
   if (event.httpMethod !== "POST") {
@@ -66,25 +65,3 @@ exports.handler = async (event) => {
     };
   }
 };
-const sendEmail = async (formData) => {
-    try {
-      const response = await fetch("/.netlify/functions/email", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
-      });
-  
-      const result = await response.json();
-      if (response.ok) {
-        alert("Email sent successfully!");
-      } else {
-        alert("Error: " + result.error);
-      }
-    } catch (error) {
-      console.error("Error:", error);
-      alert("Failed to send email. Please try again later.");
-    }
-  };
-  
